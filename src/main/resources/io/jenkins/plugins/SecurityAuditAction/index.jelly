@@ -1,0 +1,215 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout" xmlns:st="jelly:stapler" xmlns:f="/lib/form">
+    <l:layout title="Summary Security Report">
+        <l:side-panel>
+            <st:include page="sidepanel.jelly" it="${it.run}" optional="true" />
+        </l:side-panel>
+        <l:main-panel>
+            <script>
+                var backend = <st:bind value="${it}"/>;
+
+                function doSubmit() {
+                    var optionArray = [];
+                    var textareaArray = [];
+                    var projectKeyArray = [];
+                    var affectedVersionArray = [];
+
+                    optionsValue = document.getElementsByName("option");
+                    textareas = document.getElementsByClassName("textarea");
+                    projectKey = document.getElementsByName("project_key");
+                    affectedVersion = document.getElementsByName("affected_version");
+
+                    console.log(optionsValue);
+                    console.log(textareas);
+                    console.log(projectKey);
+                    console.log(affectedVersion);
+
+                    for(var i=0; optionsValue.length > i; i++){
+                        optionArray.push(optionsValue[i].value);
+                        textareaArray.push(textareas[i].value);
+                        projectKeyArray.push(projectKey[i].value);
+                        affectedVersionArray.push(affectedVersion[i].value);
+                    }
+
+                    backend.submitData(optionArray, textareaArray, projectKeyArray, affectedVersionArray);
+                    setTimeout(location.reload.bind(location), 5000);
+                    return optionArray;
+                }
+
+                function cleanUp(){
+                    if (confirm("The vulnerabilities in the blacklist will be removed from the list and this operation is not reversible. Are you sure?")) {
+                        var optionArray = [];
+                        optionsValue = document.getElementsByName("option");
+
+                        for(var i=0; optionsValue.length > i; i++){
+                            optionArray.push(optionsValue[i].value);
+                        }
+                        backend.cleanUp(optionArray);
+                        setTimeout(location.reload.bind(location), 4000);
+                    }
+                    return
+                }
+
+                function doReset(index){
+                    backend.resetStatus(index);
+                    setTimeout(location.reload.bind(location), 5000);
+                    return
+                }
+
+                function onClick(index){
+                    divRequest = document.getElementById("HTTPRequestDiv" + index);
+                    showButton = document.getElementById("showButton" + index);
+
+                    if(showButton.value == "+"){
+                        document.getElementById("HTTPRequestDiv" + index).style.display = "block";
+                        document.getElementById("showButton" + index).value = "-";
+                        document.getElementById("showButton" + index).title = "The - button hides the information about HTTP request.";
+                    } else {
+                        document.getElementById("HTTPRequestDiv" + index).style.display = "none";
+                        document.getElementById("showButton" + index).value = "+";
+                        document.getElementById("showButton" + index).title = "The + button shows more information about HTTP request.";
+                    }
+                }
+            </script>
+            <h1>
+                Summary Security Report
+            </h1>
+
+            <j:choose>
+                <j:when test="${it.getErrorMessage() == ''}">
+                </j:when>
+                <j:when test="${it.getErrorMessage() == null}">
+                </j:when>
+                <j:otherwise>
+                    <strong>ERROR: </strong> <i>${it.getErrorMessage()}</i>
+                </j:otherwise>
+            </j:choose>
+
+            <table style="width:100%">
+                <tr>
+                    <th>Reset</th>
+                    <th>Vulnerability</th>
+                    <th>How to reproduce</th>
+                    <th>Options</th>
+                    <th>Jira information</th>
+                </tr>
+                <j:forEach var="vulnerability" items="${it.getVulnerabilities()}" varStatus="myIndex">
+                        <tr>
+                            <td>
+                                <j:choose>
+                                    <j:when test="${vulnerability.getStatus() == 'Not confirmed'}">
+                                        <input type="button" title="The reset button removes the information about the vulnerability from the database and restoring to NOT CONFIRMED status. Moreover, if the vulnerability has CONFIRMED status, then the reset button also removes JIra issue from the Jira server." onClick="doReset(${myIndex.index})" value="Reset" disabled="disabled"></input>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <input type="button" title="The reset button removes the information about the vulnerability from the database and restoring to NOT CONFIRMED status. Moreover, if the vulnerability has CONFIRMED status, then the reset button also removes JIra issue from the Jira server." onClick="doReset(${myIndex.index})" value="Reset"></input>
+                                    </j:otherwise>
+                                </j:choose>
+                            </td>
+                            <td>
+                                <div>
+                                    <j:choose>
+                                        <j:when test="${vulnerability.getStatus() == 'Confirmed'}">
+                                            <h2><i>${vulnerability.getStatus()}</i>: <a href="${vulnerability.getIssueURL()}" target="_blank">${vulnerability.getIssueJiraID()}</a></h2>
+                                        </j:when>
+                                        <j:otherwise>
+                                            <h2><i>${vulnerability.getStatus()}</i></h2>
+                                        </j:otherwise>
+                                    </j:choose>
+                                    <strong>Vulnerability type: </strong><i>${vulnerability.getVulnerabilityType()}</i>
+                                    <br></br>
+                                    <strong>Vulnerable path: </strong> <i>${vulnerability.getVulnerablePath()}</i>
+                                    <br></br>
+                                    <strong>Vulnerable parameter: </strong> <i>${vulnerability.getVulnerableParameter()}</i>
+                                    <br></br>
+                                    <strong>Attack vector: </strong> <i>${vulnerability.getAttackVector()}</i>
+                                    <br></br>
+                                    <span><h4>HTTP Request: <input id="showButton${myIndex.index}" type="button" title="The + button shows more information about HTTP request." onClick="onClick(${myIndex.index})" value="+"></input></h4> </span>
+                                    <div id="HTTPRequestDiv${myIndex.index}" style="display:none">
+                                        <strong>HTTP Method: </strong> <i>${vulnerability.getHTTPMethod()}</i>
+                                        <br></br>
+                                        <strong>URL: </strong> <i>${vulnerability.getUrl()}</i>
+                                        <br></br>
+                                        <strong>Parameters: </strong>
+                                        <table align="center" width="100%" border="1px">
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Value</th>
+                                            </tr>
+                                        <j:forEach var="parameter" items="${vulnerability.getParameterList()}">
+                                            <tr>
+                                                <td align="center">${parameter.getKey()}</td>
+                                                <td align="center">${parameter.getValue()}</td>
+                                            </tr>
+                                        </j:forEach>
+                                        </table>
+                                        <br></br>
+                                    </div>
+                                    <hr></hr>
+                                </div>
+                            </td>
+                            <td>
+                                <div align="center">
+                                    <j:choose>
+                                        <j:when test="${vulnerability.getHowToReproduce() == ''}">
+                                            <textarea class="textarea" title="Write here the steps in order to reproduce the vulnerability" placeholder="Insert the steps to reproduce the vulnerability"></textarea>
+                                        </j:when>
+                                        <j:when test="${vulnerability.getHowToReproduce() == null}">
+                                            <textarea class="textarea" title="Write here the steps in order to reproduce the vulnerability" placeholder="Insert the steps to reproduce the vulnerability"></textarea>
+                                        </j:when>
+                                        <j:otherwise>
+                                            <textarea class="textarea" title="Write here the steps in order to reproduce the vulnerability">${vulnerability.getHowToReproduce()}</textarea>
+                                        </j:otherwise>
+                                    </j:choose>
+                                </div>
+                            </td>
+                            <td>
+                                <div align="center">
+                                    <select name="option" title="Choose the action to perform on the vulnerability. You can select CONFIRM BUG in order to confirm that vulnerability is a TRUE POSITIVE. You can select ADD BLACKLIST in order to indicate that vulnerability is a FALSE POSITIVE. Or you can select NO ACTIONS in order to postpone the decision.">
+                                        <j:choose>
+                                            <j:when test="${vulnerability.getStatus() == 'Confirmed'}">
+                                                <option value="confirmed" selected="selected" title="CONFIRM BUG indicates that the vulnerability is a TRUE POSITIVE">Confirm bug</option>
+                                                <option value="no_action" title="NO ACTIONS postpones the decision about the vulnerability">No actions</option>
+                                                <option value="add_blacklist" title="ADD BLACKLIST indicates that the vulnerability is a FALSE POSITIVE">Add blacklist</option>
+                                            </j:when>
+                                            <j:when test="${vulnerability.getStatus() == 'In blacklist'}">
+                                                <option value="confirmed" title="CONFIRM BUG indicates that a vulnerability is a TRUE POSITIVE">Confirm bug</option>
+                                                <option value="no_action" title="NO ACTIONS postpones the decision about the vulnerability">No actions</option>
+                                                <option value="add_blacklist" selected="selected" title="ADD BLACKLIST indicates that the vulnerability is a FALSE POSITIVE">Add blacklist</option>
+                                            </j:when>
+                                            <j:otherwise>
+                                                <option value="confirmed" title="CONFIRM BUG indicates that a vulnerability is a TRUE POSITIVE">Confirm bug</option>
+                                                <option value="no_action" selected="selected" title="NO ACTIONS postpones the decision about the vulnerability">No actions</option>
+                                                <option value="add_blacklist" title="ADD BLACKLIST indicates that the vulnerability is a FALSE POSITIVE">Add blacklist</option>
+                                            </j:otherwise>
+                                        </j:choose>
+                                    </select>
+                                </div>
+                            </td>
+                            <td>
+                                <j:choose>
+                                    <j:when test="${vulnerability.getProjectKey() == null}">
+                                        <div align="center">
+                                            <input type="text" placeholder="Project Key" title="The project key of the Jira issue (e.g. ICW, IMGM, ...)" name="project_key"></input>
+                                        </div>
+                                        <div align="center">
+                                            <input type="text" placeholder="Affected version" title="Write here the list of affected versions. You can write more than one affected versions separating them using ; (e.g. 1.3.0-1;0.4.0-1)" name="affected_version"></input>
+                                        </div>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <div align="center">
+                                            <input type="text" title="The project key of the Jira issue (e.g. ICW, IMGM, ...)" name="project_key" value="${vulnerability.getProjectKey()}"></input>
+                                        </div>
+                                        <div align="center">
+                                            <input type="text" title="Write here the list of affected versions. You can write more than one affected versions separating them using ; (e.g. 1.3.0-1;0.4.0-1)" name="affected_version" value="${vulnerability.getAffectedVersions()}"></input>
+                                        </div>
+                                    </j:otherwise>
+                                </j:choose>
+                            </td>
+                        </tr>
+                </j:forEach>
+            </table>
+            <input type="button" title="The submit button sends the information of vulnerabilities to the database, modifies the status of the vulnerabilities with the selected one in the options and creates a Jira issue if needed." onClick="doSubmit()" value="Submit"></input>
+            <input type="button" title="The clean up button removes from the list above all vulnerabilities with status equal to IN BLACKLIST." onClick="cleanUp()" value="Clean up"></input>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+    Test plugin description
+</div>

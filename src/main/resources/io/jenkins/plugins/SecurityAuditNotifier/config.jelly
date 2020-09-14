@@ -1,0 +1,21 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:entry title="SQL server host" description="The JDBC String to connect to SQL server">
+        <f:textbox field="sql_url"></f:textbox>
+    </f:entry>
+    <f:entry title="SQL server username" description="The username to connect to SQL server">
+        <f:textbox field="sql_username"></f:textbox>
+    </f:entry>
+    <f:entry title="SQL server password" description="The password to connect to SQL server">
+        <f:password field="sql_password"></f:password>
+    </f:entry>
+    <f:entry title="Jira URL Server" description="The URL of Jira server">
+        <f:textbox field="jira_url" ></f:textbox>
+    </f:entry>
+    <f:entry title="Jira username" description="The Jira username/email to connect to Jira">
+        <f:textbox field="jira_username"></f:textbox>
+    </f:entry>
+    <f:entry title="Jira password" description="The Jira password to connect to Jira">
+        <f:password field="jira_password"></f:password>
+    </f:entry>
+</j:jelly>
